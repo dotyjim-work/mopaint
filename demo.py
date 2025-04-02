@@ -11,7 +11,7 @@
 
 import marimo
 
-__generated_with = "0.11.31"
+__generated_with = "0.12.2"
 app = marimo.App(width="medium")
 
 
@@ -25,7 +25,13 @@ def _():
 
 @app.cell
 def _(Paint, mo):
-    widget = mo.ui.anywidget(Paint(width=1000, height=450))
+    widget = mo.ui.anywidget(
+        Paint(
+            width=1000,
+            height=450,
+            cache_path=mo.notebook_location() / "public" / "drawing1.base64",
+        )
+    )
     return (widget,)
 
 

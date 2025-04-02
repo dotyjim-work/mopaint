@@ -49,22 +49,31 @@ function Component() {
   const [tool, setTool] = useState('brush');
   const [position, setPosition] = useState({ x: 0, y: 0 });
   const [dragging, setDragging] = useState(false);
-  let [base64, setBase64] = useModelState<string>("base64")
-
+  let [base64, setBase64] = useModelState<string>("base64");
+  let [cachePath] = useModelState<string>("cache_path");
 
   useEffect(() => {
     const canvas = canvasRef.current;
     const context = canvas?.getContext('2d');
-    if (context) {
+    if (context && canvas) {
       context.fillStyle = '#FFFFFF';
       context.fillRect(0, 0, canvas.width, canvas.height);
+
+      // Load existing image if base64 data exists
+      if (base64) {
+        const img = new Image();
+        img.onload = () => {
+          context.drawImage(img, 0, 0);
+        };
+        img.src = base64.startsWith('data:') ? base64 : `data:image/png;base64,${base64}`;
+      }
     }
   }, []);
 
   const startDrawing = (e: React.MouseEvent<HTMLCanvasElement>) => {
     const canvas = canvasRef.current;
     const context = canvas?.getContext('2d');
-    if (context) {
+    if (context && canvas) {
       const rect = canvas.getBoundingClientRect();
       const x = e.clientX - rect.left;
       const y = e.clientY - rect.top;
@@ -78,7 +87,7 @@ function Component() {
     if (!isDrawing) return;
     const canvas = canvasRef.current;
     const context = canvas?.getContext('2d');
-    if (context) {
+    if (context && canvas) {
       const rect = canvas.getBoundingClientRect();
       const x = e.clientX - rect.left;
       const y = e.clientY - rect.top;
@@ -95,8 +104,8 @@ function Component() {
     const canvas = canvasRef.current;
     if (canvas) {
       base64 = canvas.toDataURL('image/png');
+      setBase64(base64);
     }
-    setBase64(base64 as string);
   };
 
   const startDragging = (e: React.MouseEvent<HTMLDivElement>) => {
@@ -122,6 +131,13 @@ function Component() {
     setDragging(false);
   };
 
+  // Get filename from cache path
+  const getTitle = () => {
+    if (!cachePath) return "untitled - Paint";
+    const parts = cachePath.split(/[/\\]/);
+    return parts[parts.length - 1] + " - Paint";
+  };
+
   return (
     <div className="bg-teal-600 overflow-hidden" style={{ height: '500px' }}>
       <div 
@@ -136,20 +152,12 @@ function Component() {
           onMouseUp={stopDragging}
           onMouseLeave={stopDragging}
         >
-          <span>untitled - Paint</span>
+          <span>{getTitle()}</span>
           <div className="flex gap-1">
             <Button variant="ghost" className="h-5 w-5 p-0 min-w-0 text-white hover:bg-blue-700">_</Button>
             <Button variant="ghost" className="h-5 w-5 p-0 min-w-0 text-white hover:bg-blue-700">□</Button>
             <Button variant="ghost" className="h-5 w-5 p-0 min-w-0 text-white hover:bg-blue-700">×</Button>
           </div>
-        </div>
-        <div className="bg-gray-300 px-2 py-1 text-sm">
-          <span className="mr-4">File</span>
-          <span className="mr-4">Edit</span>
-          <span className="mr-4">View</span>
-          <span className="mr-4">Image</span>
-          <span className="mr-4">Options</span>
-          <span>Help</span>
         </div>
         <div className="flex">
           <div className="w-8 bg-gray-300 p-0.5 border-r border-gray-400">
@@ -174,11 +182,11 @@ function Component() {
               </svg>
             </Button>
           </div>
-          <div className="flex-grow overflow-auto border border-gray-400" style={{ width: '724px', height: '330px' }}>
+          <div className="flex-grow overflow-auto border border-gray-400" style={{ width: '724px', height: '370px' }}>
             <canvas
               ref={canvasRef}
               width={724}
-              height={330}
+              height={370}
               onMouseDown={startDrawing}
               onMouseMove={draw}
               onMouseUp={stopDrawing}
@@ -198,9 +206,6 @@ function Component() {
               />
             ))}
           </div>
-        </div>
-        <div className="bg-gray-300 px-2 py-1 text-sm border-t border-gray-400">
-          For Help, click Help Topics on the Help Menu.
         </div>
       </div>
     </div>
